@@ -1,0 +1,13 @@
+.sidebar {
+  overflow-y: auto;
+  z-index: 1000;
+}
+.sidebar a:hover {
+  background-color: #343a40;
+  color: #fff;
+}
+
+.sidebar button:hover {
+  background-color: #dc3545;
+  border-color: #dc3545;
+}

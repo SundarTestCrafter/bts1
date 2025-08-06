@@ -1,0 +1,19 @@
+.sidebar {
+  width: 220px;
+  background-color: #1f1f1f;
+  color: white;
+  padding: 1rem;
+}
+
+.sidebar li {
+  padding: 8px 0;
+  cursor: pointer;
+}
+
+.sidebar li.active {
+  font-weight: bold;
+}
+
+.modal-backdrop {
+  z-index: 1040;
+}

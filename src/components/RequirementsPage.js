@@ -1,229 +1,203 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
+import AddRequirementModal from './AddRequirementModal';
+import AddTestScenarioModal from './AddTestScenarioModal';
+import AddTestCaseModal from './AddTestCaseModal';
 
 function RequirementsPage() {
   const { projectId } = useParams();
-  const [activeTab, setActiveTab] = useState('Requirements');
-
+  const [activeTab, setActiveTab] = useState('requirements');
   const [requirements, setRequirements] = useState([]);
-  const [scenarios, setScenarios] = useState([]);
+  const [testScenarios, setTestScenarios] = useState([]);
   const [testCases, setTestCases] = useState([]);
+  const [showRequirementModal, setShowRequirementModal] = useState(false);
+  const [showTestScenarioModal, setShowTestScenarioModal] = useState(false);
+  const [showTestCaseModal, setShowTestCaseModal] = useState(false);
 
-  const [showModal, setShowModal] = useState(false);
-  const [formData, setFormData] = useState({});
-
-  // Load data when active tab or project changes
   useEffect(() => {
-    if (activeTab === 'Requirements') fetchRequirements();
-    else if (activeTab === 'Test Scenarios') fetchScenarios();
-    else if (activeTab === 'Test Cases') fetchTestCases();
-  }, [activeTab, projectId]);
+    fetchRequirements();
+    fetchTestScenarios();
+    fetchTestCases();
+  }, [projectId]);
 
   const fetchRequirements = async () => {
-    const res = await axios.get(`/pls/apex/vs_works/bts_requirements/?project_id=${projectId}`);
-    setRequirements(res.data.items || []);
+    try {
+      const response = await axios.get('/pls/apex/vs_works/bts_requirements/');
+      const filtered = response.data.items.filter(
+        (item) => item.project_id === parseInt(projectId)
+      );
+      setRequirements(filtered);
+    } catch (error) {
+      console.error('Error fetching requirements:', error);
+    }
   };
 
-  const fetchScenarios = async () => {
-    const res = await axios.get(`/pls/apex/vs_works/bts_test_scenarios/?project_id=${projectId}`);
-    setScenarios(res.data.items || []);
+  const fetchTestScenarios = async () => {
+    try {
+      const response = await axios.get('/pls/apex/vs_works/bts_test_scenarios/');
+      const filtered = response.data.items.filter(
+        (item) => item.project_id === parseInt(projectId)
+      );
+      setTestScenarios(filtered);
+    } catch (error) {
+      console.error('Error fetching test scenarios:', error);
+    }
   };
 
   const fetchTestCases = async () => {
-    const res = await axios.get(`/pls/apex/vs_works/bts_test_cases/?project_id=${projectId}`);
-    setTestCases(res.data.items || []);
-  };
-
-  const handleAdd = async () => {
-    const apiMap = {
-      'Requirements': '/pls/apex/vs_works/bts_requirements/',
-      'Test Scenarios': '/pls/apex/vs_works/bts_test_scenarios/',
-      'Test Cases': '/pls/apex/vs_works/bts_test_cases/',
-    };
-
-    if (!formData.title) {
-      alert('Title is required');
-      return;
-    }
-
     try {
-      await axios.post(apiMap[activeTab], { ...formData, project_id: projectId });
-      setShowModal(false);
-      setFormData({});
-      if (activeTab === 'Requirements') fetchRequirements();
-      else if (activeTab === 'Test Scenarios') fetchScenarios();
-      else if (activeTab === 'Test Cases') fetchTestCases();
-    } catch (err) {
-      console.error(err);
-      alert('Error: ' + err.response?.data?.message || 'Unknown error');
+      const response = await axios.get('/pls/apex/vs_works/bts_test_cases/');
+      const filtered = response.data.items.filter(
+        (item) => item.project_id === parseInt(projectId)
+      );
+      setTestCases(filtered);
+    } catch (error) {
+      console.error('Error fetching test cases:', error);
     }
   };
 
-  const renderList = () => {
-    if (activeTab === 'Requirements') {
-      return (
-        <ul>
-          {requirements.map((req) => (
-            <li key={req.requirement_id}>
-              <strong>{req.requirement_title}</strong> – {req.main_module} → {req.sub_module}
-            </li>
-          ))}
-        </ul>
-      );
-    }
-
-    if (activeTab === 'Test Scenarios') {
-      return (
-        <ul>
-          {scenarios.map((s) => (
-            <li key={s.scenario_id}>
-              <strong>{s.scenario_title}</strong> – {s.scenario_description}
-            </li>
-          ))}
-        </ul>
-      );
-    }
-
-    if (activeTab === 'Test Cases') {
-      return (
-        <ul>
-          {testCases.map((tc) => (
-            <li key={tc.testcase_id}>
-              <strong>{tc.title}</strong> – {tc.expected_result}
-            </li>
-          ))}
-        </ul>
-      );
-    }
-
-    return <div><i>Issues content coming soon...</i></div>;
-  };
-
-  const renderModalFields = () => {
-    return (
-      <>
-        <div className="mb-3">
-          <label className="form-label">Title</label>
-          <input
-            className="form-control"
-            value={formData.title || ''}
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-          />
-        </div>
-
-        {activeTab === 'Requirements' && (
-          <>
-            <div className="mb-3">
-              <label>Main Module</label>
-              <input
-                className="form-control"
-                value={formData.main_module || ''}
-                onChange={(e) => setFormData({ ...formData, main_module: e.target.value })}
-              />
-            </div>
-            <div className="mb-3">
-              <label>Sub Module</label>
-              <input
-                className="form-control"
-                value={formData.sub_module || ''}
-                onChange={(e) => setFormData({ ...formData, sub_module: e.target.value })}
-              />
-            </div>
-          </>
-        )}
-
-        {activeTab === 'Test Scenarios' && (
-          <div className="mb-3">
-            <label>Description</label>
-            <input
-              className="form-control"
-              value={formData.description || ''}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            />
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'requirements':
+        return (
+          <div>
+            {requirements.map((req) => (
+              <div key={req.requirement_id} className="card mb-2">
+                <div className="card-body">
+                  <h5>{req.requirement_title}</h5>
+                  <p>{req.description}</p>
+                  <small className="text-muted">Main Module: {req.main_module}</small>
+                </div>
+              </div>
+            ))}
           </div>
-        )}
+        );
+      case 'test-scenarios':
+        return (
+          <div>
+            {testScenarios.map((ts) => (
+              <div key={ts.scenario_id} className="card mb-2">
+                <div className="card-body">
+                  <h5>{ts.scenario_title}</h5>
+                  <p>{ts.objective}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      case 'test-cases':
+        return (
+          <div>
+            {testCases.map((tc) => (
+              <div key={tc.test_case_id} className="card mb-2">
+                <div className="card-body">
+                  <h5>{tc.test_case_title}</h5>
+                  <p><strong>Steps:</strong> {tc.test_steps}</p>
+                  <p><strong>Expected Result:</strong> {tc.expected_result}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      case 'issues':
+        return <div><p>No issues loaded yet.</p></div>;
+      default:
+        return null;
+    }
+  };
 
-        {activeTab === 'Test Cases' && (
-          <>
-            <div className="mb-3">
-              <label>Description</label>
-              <input
-                className="form-control"
-                value={formData.description || ''}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              />
-            </div>
-            <div className="mb-3">
-              <label>Expected Result</label>
-              <input
-                className="form-control"
-                value={formData.expected_result || ''}
-                onChange={(e) => setFormData({ ...formData, expected_result: e.target.value })}
-              />
-            </div>
-          </>
-        )}
-      </>
-    );
+  const renderAddButton = () => {
+    switch (activeTab) {
+      case 'requirements':
+        return (
+          <div className="d-flex justify-content-end mb-3">
+            <button className="btn btn-primary" onClick={() => setShowRequirementModal(true)}>
+              + Add Requirement
+            </button>
+          </div>
+        );
+      case 'test-scenarios':
+        return (
+          <div className="d-flex justify-content-end mb-3">
+            <button className="btn btn-primary" onClick={() => setShowTestScenarioModal(true)}>
+              + Add Test Scenario
+            </button>
+          </div>
+        );
+      case 'test-cases':
+        return (
+          <div className="d-flex justify-content-end mb-3">
+            <button className="btn btn-primary" onClick={() => setShowTestCaseModal(true)}>
+              + Add Test Case
+            </button>
+          </div>
+        );
+      default:
+        return null;
+    }
   };
 
   return (
-    <div className="d-flex" style={{ height: '100vh'}}>
-      {/* Sidebar */}
-      <div style={{ width: '220px', backgroundColor: '#1aabeeff', color: 'white', padding: '1rem' }}>
-        <h5>Project Menu</h5>
-        <ul className="list-unstyled">
-          {['Requirements', 'Test Scenarios', 'Test Cases', 'Issues'].map((tab) => (
-            <li
-              key={tab}
-              style={{
-                padding: '8px 0',
-                cursor: 'pointer',
-                fontWeight: activeTab === tab ? 'bold' : 'normal',
-              }}
-              onClick={() => setActiveTab(tab)}
+    <div className="container-fluid">
+      <div className="row">
+        <div className="col-md-3 border-end" style={{ minHeight: '100vh' }}>
+          <div className="list-group mt-4">
+            <button
+              className={`list-group-item list-group-item-action ${activeTab === 'requirements' ? 'active' : ''}`}
+              onClick={() => setActiveTab('requirements')}
             >
-              {tab}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-grow-1 p-4">
-        <div className="d-flex justify-content-between align-items-center mb-3">
-          <h4>{activeTab} for Project ID: {projectId}</h4>
-          {activeTab !== 'Issues' && (
-            <button className="btn btn-primary" onClick={() => {
-              setFormData({});
-              setShowModal(true);
-            }}>
-              + Add {activeTab}
+              Requirements
             </button>
-          )}
-        </div>
-
-        {renderList()}
-      </div>
-
-      {/* Modal */}
-      {showModal && (
-        <div className="modal show d-block" tabIndex="-1" role="dialog">
-          <div className="modal-dialog" role="document">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Add {activeTab}</h5>
-                <button type="button" className="btn-close" onClick={() => setShowModal(false)} />
-              </div>
-              <div className="modal-body">{renderModalFields()}</div>
-              <div className="modal-footer">
-                <button className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
-                <button className="btn btn-primary" onClick={handleAdd}>Add</button>
-              </div>
-            </div>
+            <button
+              className={`list-group-item list-group-item-action ${activeTab === 'test-scenarios' ? 'active' : ''}`}
+              onClick={() => setActiveTab('test-scenarios')}
+            >
+              Test Scenarios
+            </button>
+            <button
+              className={`list-group-item list-group-item-action ${activeTab === 'test-cases' ? 'active' : ''}`}
+              onClick={() => setActiveTab('test-cases')}
+            >
+              Test Cases
+            </button>
+            <button
+              className={`list-group-item list-group-item-action ${activeTab === 'issues' ? 'active' : ''}`}
+              onClick={() => setActiveTab('issues')}
+            >
+              Issues
+            </button>
           </div>
         </div>
+
+        <div className="col-md-9 p-4">
+          {renderAddButton()}
+          {renderContent()}
+        </div>
+      </div>
+
+      {showRequirementModal && (
+        <AddRequirementModal
+          projectId={parseInt(projectId)}
+          closeModal={() => setShowRequirementModal(false)}
+          onRequirementAdded={fetchRequirements}
+        />
+      )}
+
+      {showTestScenarioModal && (
+        <AddTestScenarioModal
+          projectId={parseInt(projectId)}
+          onClose={() => setShowTestScenarioModal(false)}
+          onAdd={fetchTestScenarios}
+        />
+      )}
+
+      {showTestCaseModal && (
+        <AddTestCaseModal
+          projectId={parseInt(projectId)}
+          onClose={() => setShowTestCaseModal(false)}
+          onAdd={fetchTestCases}
+        />
       )}
     </div>
   );

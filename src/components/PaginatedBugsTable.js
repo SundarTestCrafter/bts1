@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { Spinner } from "react-bootstrap";
-import { useNavigate } from 'react-router-dom';
 import CreateModal from './CreateModal'; // Make sure this path is correct
 
 const PaginatedBugsTable = () => {
